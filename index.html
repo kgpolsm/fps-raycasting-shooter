@@ -14,6 +14,8 @@ canvas { display: block; cursor: none; width: min(100vw, 177.77vh); height: auto
 #reload-btn { right: 126px; bottom: 122px; width: 52px; height: 52px; font-size: 14px; }
 #restart-btn { right: 18px; top: 18px; width: 58px; height: 58px; font-size: 13px; border-color: rgba(255,210,60,.9); }
 #restart-game-btn { position: fixed; z-index: 6; right: 18px; top: 18px; padding: 10px 14px; color: white; background: rgba(40,40,40,.85); border: 2px solid #ffcc00; border-radius: 8px; font: bold 15px Consolas, monospace; cursor: pointer; }
+#rotate-game-btn { position: fixed; z-index: 6; right: 18px; top: 66px; padding: 10px 14px; color: white; background: rgba(40,40,40,.85); border: 2px solid #51a8ff; border-radius: 8px; font: bold 15px Consolas, monospace; cursor: pointer; }
+canvas.rotated { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(90deg); width: 100vh; height: auto; max-height: none; }
 @media (pointer: coarse), (max-width: 800px) { #touch-ui { display: block; } #start-screen h1 { font-size: 28px; } #start-screen p { font-size: 14px; } #start-screen .controls { padding: 12px; margin: 10px; } #start-screen .start-btn { font-size: 20px; } }
 @media (orientation: portrait) and (pointer: coarse) { canvas { width: 100vw; height: auto; } }
 #start-screen {
@@ -51,6 +53,7 @@ canvas { display: block; cursor: none; width: min(100vw, 177.77vh); height: auto
 </div>
 <canvas id="game"></canvas>
 <button id="restart-game-btn" onclick="restartGame()">↻ 다시 시작</button>
+<button id="rotate-game-btn" onclick="toggleRotate()">⟳ 화면 회전</button>
 <div id="touch-ui" aria-label="휴대폰 조작 버튼">
     <button class="touch-btn" id="move-up">▲</button>
     <button class="touch-btn" id="move-left">◀</button>
@@ -813,19 +816,35 @@ document.getElementById('restart-btn').addEventListener('pointerdown', (e) => {
     restartGame();
 });
 
-let touchLookX = null;
+// 화면 회전: 세로로 들고 가로 화면처럼 플레이
+let screenRotated = false;
+function toggleRotate() {
+    screenRotated = !screenRotated;
+    canvas.classList.toggle('rotated', screenRotated);
+}
+
+let touchLookX = null, touchLookY = null;
 canvas.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) touchLookX = e.touches[0].clientX;
+    if (e.touches.length === 1) {
+        touchLookX = e.touches[0].clientX;
+        touchLookY = e.touches[0].clientY;
+    }
 }, { passive: false });
 canvas.addEventListener('touchmove', (e) => {
     if (game && running && !game.gameOver && e.touches.length === 1 && touchLookX !== null) {
-        const x = e.touches[0].clientX;
-        game.pa += (x - touchLookX) * 0.008;
+        const x = e.touches[0].clientX, y = e.touches[0].clientY;
+        if (screenRotated) {
+            // 화면이 90° 회전되어 있어 세로 드래그가 좌우 시점이 됩니다.
+            game.pa += (y - touchLookY) * 0.008;
+        } else {
+            game.pa += (x - touchLookX) * 0.008;
+        }
         touchLookX = x;
+        touchLookY = y;
     }
     e.preventDefault();
 }, { passive: false });
-canvas.addEventListener('touchend', () => { touchLookX = null; });
+canvas.addEventListener('touchend', () => { touchLookX = null; touchLookY = null; });
 </script>
 </body>
 </html>
