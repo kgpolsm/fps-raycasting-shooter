@@ -7,17 +7,20 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
 canvas { display: block; cursor: none; width: min(100vw, 177.77vh); height: auto; max-height: 100vh; touch-action: none; }
-#touch-ui { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 5; font-family: Consolas, monospace; }
+/* 버튼을 포함한 모든 오버레이를 한 겹(ui-layer)으로 묶어 화면과 함께 회전시킵니다. */
+#ui-layer { position: fixed; inset: 0; pointer-events: none; z-index: 8; font-family: Consolas, monospace; }
+#ui-layer.rotated { left: 50%; top: 50%; right: auto; bottom: auto; width: 100vh; width: 100dvh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); }
 .touch-btn { position: absolute; width: 64px; height: 64px; border: 2px solid rgba(255,255,255,.65); border-radius: 50%; background: rgba(25,25,25,.45); color: white; font-size: 22px; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
 #move-up { left: 74px; bottom: 142px; } #move-left { left: 8px; bottom: 76px; } #move-down { left: 74px; bottom: 10px; } #move-right { left: 140px; bottom: 76px; }
 #shoot-btn { right: 25px; bottom: 45px; width: 88px; height: 88px; border-color: rgba(255,90,70,.9); background: rgba(170,30,25,.45); font-size: 17px; }
 #reload-btn { right: 126px; bottom: 122px; width: 52px; height: 52px; font-size: 14px; }
-#restart-btn { right: 18px; top: 18px; width: 58px; height: 58px; font-size: 13px; border-color: rgba(255,210,60,.9); }
-#restart-game-btn { position: fixed; z-index: 6; right: 18px; top: 18px; padding: 10px 14px; color: white; background: rgba(40,40,40,.85); border: 2px solid #ffcc00; border-radius: 8px; font: bold 15px Consolas, monospace; cursor: pointer; }
-#rotate-game-btn { position: fixed; z-index: 6; right: 18px; top: 66px; padding: 10px 14px; color: white; background: rgba(40,40,40,.85); border: 2px solid #51a8ff; border-radius: 8px; font: bold 15px Consolas, monospace; cursor: pointer; }
-canvas.rotated { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(90deg); width: 100vh; height: auto; max-height: none; }
-@media (pointer: coarse), (max-width: 800px) { #touch-ui { display: block; } #start-screen h1 { font-size: 28px; } #start-screen p { font-size: 14px; } #start-screen .controls { padding: 12px; margin: 10px; } #start-screen .start-btn { font-size: 20px; } }
-@media (orientation: portrait) and (pointer: coarse) { canvas { width: 100vw; height: auto; } }
+.control-btn { display: none; }
+#restart-game-btn, #rotate-game-btn { position: absolute; right: 18px; padding: 10px 14px; color: white; background: rgba(40,40,40,.9); border-radius: 8px; font: bold 15px Consolas, monospace; cursor: pointer; pointer-events: auto; touch-action: manipulation; white-space: nowrap; }
+#restart-game-btn { top: 18px; border: 2px solid #ffcc00; }
+#rotate-game-btn { top: 66px; border: 2px solid #51a8ff; }
+canvas.rotated { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(90deg); width: 100vh; width: 100dvh; height: auto; max-height: none; }
+@media (pointer: coarse), (max-width: 800px) { .control-btn { display: block; } #start-screen h1 { font-size: 28px; } #start-screen p { font-size: 14px; } #start-screen .controls { padding: 12px; margin: 10px; } #start-screen .start-btn { font-size: 20px; } }
+@media (orientation: portrait) and (pointer: coarse) { canvas:not(.rotated) { width: 100vw; height: auto; } }
 #start-screen {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
@@ -52,16 +55,15 @@ canvas.rotated { position: fixed; left: 50%; top: 50%; transform: translate(-50%
     <button class="start-btn" onclick="startGame()">게임 시작</button>
 </div>
 <canvas id="game"></canvas>
-<button id="restart-game-btn" onclick="restartGame()">↻ 다시 시작</button>
-<button id="rotate-game-btn" onclick="toggleRotate()">⟳ 화면 회전</button>
-<div id="touch-ui" aria-label="휴대폰 조작 버튼">
-    <button class="touch-btn" id="move-up">▲</button>
-    <button class="touch-btn" id="move-left">◀</button>
-    <button class="touch-btn" id="move-down">▼</button>
-    <button class="touch-btn" id="move-right">▶</button>
-    <button class="touch-btn" id="reload-btn">R</button>
-    <button class="touch-btn" id="shoot-btn">FIRE</button>
-    <button class="touch-btn" id="restart-btn">다시<br>시작</button>
+<div id="ui-layer" aria-label="휴대폰 조작 버튼">
+    <button class="touch-btn control-btn" id="move-up">▲</button>
+    <button class="touch-btn control-btn" id="move-left">◀</button>
+    <button class="touch-btn control-btn" id="move-down">▼</button>
+    <button class="touch-btn control-btn" id="move-right">▶</button>
+    <button class="touch-btn control-btn" id="reload-btn">R</button>
+    <button class="touch-btn control-btn" id="shoot-btn">FIRE</button>
+    <button id="restart-game-btn">↻ 다시 시작</button>
+    <button id="rotate-game-btn">⟳ 화면 회전</button>
 </div>
 
 <script>
@@ -809,18 +811,34 @@ for (const [id, code] of Object.entries(touchKeyMap)) {
     button.addEventListener('pointercancel', () => setKey(false));
     button.addEventListener('pointerleave', (e) => { if (e.buttons === 0) setKey(false); });
 }
-document.getElementById('shoot-btn').addEventListener('pointerdown', (e) => { e.preventDefault(); shoot(); });
-document.getElementById('reload-btn').addEventListener('pointerdown', (e) => { e.preventDefault(); reload(); });
-document.getElementById('restart-btn').addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    restartGame();
-});
+// 버튼은 pointerdown으로 즉시 반응하게 해서 '가끔 안 눌리는' 문제를 줄입니다.
+function bindButton(id, handler) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let lastFired = 0;
+    const fire = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const now = performance.now();
+        if (now - lastFired < 250) return; // 중복 입력 방지
+        lastFired = now;
+        handler();
+    };
+    el.addEventListener('pointerdown', fire);
+    el.addEventListener('click', (e) => e.preventDefault());
+}
+bindButton('shoot-btn', shoot);
+bindButton('reload-btn', reload);
+bindButton('restart-game-btn', restartGame);
+bindButton('rotate-game-btn', toggleRotate);
 
-// 화면 회전: 세로로 들고 가로 화면처럼 플레이
+// 화면 회전: 버튼까지 함께 돌려서 세로로 들고 가로 화면처럼 플레이
 let screenRotated = false;
 function toggleRotate() {
     screenRotated = !screenRotated;
     canvas.classList.toggle('rotated', screenRotated);
+    const ui = document.getElementById('ui-layer');
+    if (ui) ui.classList.toggle('rotated', screenRotated);
 }
 
 let touchLookX = null, touchLookY = null;
